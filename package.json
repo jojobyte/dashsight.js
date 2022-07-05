@@ -11,6 +11,8 @@
   "files": [
     "bin",
     "lib",
+    "types.js",
+    "typings",
     "ws"
   ],
   "bin": {
