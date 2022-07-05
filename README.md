@@ -2,10 +2,6 @@
 
 SDK for Dash's flavor of the Insight API
 
-# TODO
-
-- Do we want to normalize duffs?
-
 # Install
 
 ```bash
