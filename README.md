@@ -55,8 +55,9 @@ you trust.
 
 ## `insight.getBalance(address)` (BUG)
 
-Do not use. Does not give accurate balances. Provided for completeness /
-compatibility only.
+**Do not use**.
+
+Does not give accurate balances. Provided for completeness / compatibility only.
 
 ## `dashsight.getInstantBalance(addr)`
 
