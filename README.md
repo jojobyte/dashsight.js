@@ -1,4 +1,4 @@
-# dashsight.js
+# [dashsight.js](https://github.com/dashhive/dashsight.js)
 
 SDK for Dash's flavor of the Insight API
 
