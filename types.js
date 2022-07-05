@@ -91,7 +91,10 @@
 /**
  * @typedef {Object} InsightTxVin
  * @property {String} addr - base58check-encoded address
+ * @property {String} txid - the input's original output transaction id (hex)
  * @property {Number} value - float value in DASH
+ * @property {Number} valueSat - integer value in DUFFs
+ * @property {Number} vout - the input's original outputIndex
  */
 
 /**
@@ -99,6 +102,23 @@
  * @property {String} value - string value in DASH
  * @property {Object} scriptPubKey
  * @property {Array<String>} scriptPubKey.addresses
+ * @property {String} scriptPubKey.hex
+ * @property {String} spentTxId - not a UTXO, was spend in the indicated transaction
+ */
+
+//
+//
+// Core vs Insight Conversion
+//
+//
+
+/**
+ * @typedef {Object} CoreUtxo
+ * @property {String} txId
+ * @property {Number} outputIndex
+ * @property {String} address
+ * @property {String} script
+ * @property {Number} satoshis
  */
 
 //

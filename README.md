@@ -53,9 +53,9 @@ Note: There is no default `baseUrl` (this is supposed to be used in a
 decentralized fashion, after all), but `https://insight.dash.org` might be one
 you trust.
 
-## `insight.getBalance(address)` (BUG)
+## `dashsight.getBalance(address)` (BUG)
 
-**Do not use**.
+**Do not use**. Use `dashsight.getInstantBalance(address)` instead.
 
 Does not give accurate balances. Provided for completeness / compatibility only.
 
@@ -168,9 +168,16 @@ Example output:
 
 (same as above for `getTx(txid)`)
 
-## `dashsight.getUtxos(addrStr)`
+## `dashsight.getUtxos(addrStr)` (BUG)
 
 Gets all unspent transaction outputs (the usable "coins") for the given address.
+
+**Do not use**. Use `dashsight.getCoreUtxos(address)` instead.
+
+This does not include `outputIndex`, which is necessary to create a transaction
+for use with `dashsight. instantSend(txHex)`.
+
+Provided for completeness / compatibility only.
 
 ```js
 // Base58Check-encoded Pay to Pubkey Hash (p2pkh)
@@ -192,6 +199,34 @@ console.log(utxos);
     "satoshis": 1000000,
     "height": 1500000,
     "confirmations": 200000
+  }
+]
+```
+
+## `dashsight.getCoreUtxos(addrStr)`
+
+Gets all unspent transaction outputs (the usable "coins") for the given address,
+including all information needed by `dashcore-lib.Transaction`.
+
+```js
+// Base58Check-encoded Pay to Pubkey Hash (p2pkh)
+let addr = `Xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`;
+
+let utxos = await dashsight.getCoreUtxos(addr);
+
+console.log(utxos);
+```
+
+Example output:
+
+```json
+[
+  {
+    "address": "XmCyQ6qARLWXap74QubFMunngoiiA1QgCL",
+    "outputIndex": 0,
+    "satoshis": 99809,
+    "script": "76a91473640d816ff4161d8c881da78983903bf9eba2d988ac",
+    "txId": "f92e66edc9c8da41de71073ef08d62c56f8752a3f4e29ced6c515e0b1c074a38"
   }
 ]
 ```
