@@ -78,6 +78,7 @@
 
 /**
  * @typedef {Object} InsightTx
+ * @property {String} txid
  * @property {Number} confirmations
  * @property {Number} time
  * @property {Boolean} txlock

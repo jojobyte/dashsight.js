@@ -151,6 +151,9 @@ Example output:
 }
 ```
 
+Note: newly minted coins (block rewards) have a different format than payment
+transactions.
+
 ## `dashsight.getTxs(addrStr)`
 
 Get all transaction associated with an address.
@@ -166,9 +169,7 @@ console.log(txs);
 
 Example output:
 
-```json
-[ ]
-```
+(same as above for `getTx(txid)`)
 
 ## `dashsight.getUtxos(addrStr)`
 
