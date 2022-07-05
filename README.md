@@ -201,4 +201,37 @@ console.log(utxos);
 
 ## `dashsight.instantSend(txHex)`
 
-TODO
+```js
+let Dashcore = require("@dashevo/dashcore-lib");
+let Transaction = Dashcore.Transaction;
+
+let tx = new Transaction().from(dashcoreUtxos);
+tx.to(paymentAddr, duffs);
+tx.change(changeAddr, duffs);
+tx.sign(wif);
+
+let txHex = tx.serialize();
+
+let result = await dashsight.instantSend(txHex);
+
+console.log(result);
+```
+
+Example transaction hex:
+
+```txt
+030000000187ab81e88e2c19ca354f33f14d5b43b60d171ac851eb97dddd271b510cadbdb0000000
+006b483045022100ec38c77b9f285d4c9aeeba36c1fac51bb88f7443185caf7eec21b170cc5d4062
+0220098dcb5d90cb5f4ddc75ef54e2b2d1dbf220eb6fc28eed61c43192c0a420802c012103a6da86
+f51829979a3c9f05251d9400d153111655526c6c25f8f82aba38b8a745ffffffff01188501000000
+00001976a9149a00c2072c0209688cc6de5cc557af03e4f41b6388ac00000000
+```
+
+Example output:
+
+```json
+{ "txid": "0f90cf5e03e8b8f8c4468f60fc8328cfcd5617fc2163f485fabfd227c692bf93" }
+```
+
+Note: the format of `utxo` as returned from Dash's Insight API is fundamentally
+different from the Dashcore utxo and cannot be transformed by simple means.

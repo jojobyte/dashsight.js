@@ -19,7 +19,7 @@
  */
 
 /**
- * @typedef InstantBalance
+ * @typedef {Object} InstantBalance
  * @property {String} addrStr
  * @property {Number} balance
  * @property {Number} balanceSat
