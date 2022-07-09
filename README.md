@@ -233,14 +233,43 @@ Example output:
 
 ## `dashsight.instantSend(txHex)`
 
+Send a signed transaction to Dash's Insight API for relay and broadcast to the
+Dash network.
+
+See **full examples** in:
+
+- [./examples/balance-transfer.js](/examples/balance-transfer.js).
+
+Abridged Example:
+
 ```js
 let Dashcore = require("@dashevo/dashcore-lib");
 let Transaction = Dashcore.Transaction;
 
-let tx = new Transaction().from(dashcoreUtxos);
-tx.to(paymentAddr, duffs);
-tx.change(changeAddr, duffs);
-tx.sign(wif);
+let coreUtxos = [
+  {
+    address: "XmCyQ6qARLWXap74QubFMunngoiiA1QgCL",
+    outputIndex: 0,
+    satoshis: 99809,
+    script: "76a91473640d816ff4161d8c881da78983903bf9eba2d988ac",
+    txId: "f92e66edc9c8da41de71073ef08d62c56f8752a3f4e29ced6c515e0b1c074a38",
+  },
+];
+
+let payments = [
+  { address: `Xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`, satoshis: 10000000 },
+];
+
+let privateKeys = [
+  // keys that correspond to the available utxos
+  "YOUR_KEY_HERE",
+];
+
+let tx = new Transaction();
+tx.from(coreUtxos);
+tx.to(payments);
+tx.change(changeAddr);
+tx.sign(privateKeys);
 
 let txHex = tx.serialize();
 
@@ -250,6 +279,8 @@ console.log(result);
 ```
 
 Example transaction hex:
+
+(inspect at <https://live.blockcypher.com/dash/decodetx/>)
 
 ```txt
 030000000187ab81e88e2c19ca354f33f14d5b43b60d171ac851eb97dddd271b510cadbdb0000000
@@ -264,6 +295,3 @@ Example output:
 ```json
 { "txid": "0f90cf5e03e8b8f8c4468f60fc8328cfcd5617fc2163f485fabfd227c692bf93" }
 ```
-
-Note: the format of `utxo` as returned from Dash's Insight API is fundamentally
-different from the Dashcore utxo and cannot be transformed by simple means.
