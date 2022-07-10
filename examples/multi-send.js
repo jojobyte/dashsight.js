@@ -24,14 +24,7 @@ let Transaction = Dashcore.Transaction;
 
 // the cost of a typical single input, single output tx
 const BASE_FEE = 192;
-
-// ins
-//XmpcA2iWGL69vdys8jidRvNapSFc1cw5Co;
-//XfgZetFiNZDzGZXksMgbvWcyoz87hs7L5T;
-
-// outs
-//XxtRtjzhHLiVqjyTxaPVAhvUbYFfBUtNwf;
-//XegAvRKfiPRLge3wQiuSwCpooqyzo7Zm51;
+const DUST = 2000;
 
 async function main() {
   // Spendable UTXOs from two private keys
@@ -49,11 +42,11 @@ async function main() {
   let payments = [
     {
       address: "XmpcA2iWGL69vdys8jidRvNapSFc1cw5Co",
-      value: 0, // remainder
+      satoshis: 75000,
     },
     {
       address: "XfgZetFiNZDzGZXksMgbvWcyoz87hs7L5T",
-      value: 0, // remainder
+      satoshis: 75000,
     },
   ];
 
@@ -61,47 +54,22 @@ async function main() {
   // (required as a safeguard, but we won't generate change here)
   let changeAddr = "XxtRtjzhHLiVqjyTxaPVAhvUbYFfBUtNwf";
 
-  // The full transferable balance
-  let availableDuffs = coreUtxos.reduce(function (total, utxo) {
-    return total + utxo.satoshis;
-  }, 0);
-
   // Each utxo to be spent must be signed by its corresponds key
-  let Fs = require("fs").promises;
-  let keys = [(await Fs.readFile("./source-1.wif", "utf8")).trim()];
+  //let Fs = require("fs").promises;
+  let keys = [
+    // (await Fs.readFile("./key-1.wif", "utf8")).trim()
+    "<private-key-wif-for-addr-1-goes-here>",
+  ];
+  throw new Error("change the example to use your key (and remove the error)");
 
-  // Note: Cyclic Fee Estimation
-  //
-  // The fee varies base on the number of bytes, which in turn may vary based on
-  // the fee, especially for small transactions. Hence we loop to figure it out.
-  //
-  // It is possible to calculate the full fee ahead of time, however, it's more
-  // complexity than this example deserves.
-  let fee = BASE_FEE;
-  let tx;
-  for (;;) {
-    let spendableDuffs = availableDuffs - fee;
-    //@ts-ignore - the constructor can, in fact, take 0 arguments
-    tx = new Transaction();
-    tx.from(coreUtxos);
-    tx.to(paymentAddr, spendableDuffs);
-    tx.change(changeAddr);
-    tx.fee(fee);
-    tx.sign(keys);
-
-    let hex = tx.toString();
-    let newFee = hex.length / 2;
-    if (newFee <= fee) {
-      break;
-    }
-
-    fee = newFee;
-  }
+  let tx = createTx(keys, coreUtxos, payments, changeAddr);
 
   let txHex = tx.serialize();
-  console.info("Transaction Hex:");
+  console.info();
+  console.info(
+    "Transaction Hex: (inspect at https://live.blockcypher.com/dash/decodetx/)",
+  );
   console.info(txHex);
-  console.info("(inspect at https://live.blockcypher.com/dash/decodetx/)");
   console.info();
 
   let result = await dashsight.instantSend(txHex);
@@ -109,6 +77,68 @@ async function main() {
   console.info("Transaction ID:");
   console.info(result.body.txid);
   console.info();
+}
+
+function createTx(keys, coreUtxos, payments, changeAddr) {
+  // The full transferable balance
+  let availableDuffs = coreUtxos.reduce(function (total, utxo) {
+    return total + utxo.satoshis;
+  }, 0);
+
+  let fee = BASE_FEE;
+  let tx;
+  for (;;) {
+    // Note: Cyclic Fee Estimation
+    //
+    // The fee varies base on the number of bytes, which in turn may vary based on
+    // the fee, especially for small transactions. Hence we loop to figure it out.
+    //
+    // It is possible to calculate the full fee ahead of time, however, it's more
+    // complexity than this example deserves.
+    tx = calcTx();
+    if (tx) {
+      break;
+    }
+  }
+
+  return tx;
+
+  function calcTx() {
+    let spendableDuffs = availableDuffs - fee;
+
+    payments.forEach(function (payment) {
+      spendableDuffs -= payment.satoshis;
+    });
+    if (spendableDuffs < 0) {
+      let overspend = availableDuffs + Math.abs(spendableDuffs);
+      throw new Error(
+        `overspend: inputs total '${availableDuffs}', but outputs + fees total '${overspend}'`,
+      );
+    }
+
+    //@ts-ignore - the constructor can, in fact, take 0 arguments
+    tx = new Transaction();
+    tx.from(coreUtxos);
+
+    tx.to(payments);
+    tx.change(changeAddr);
+    tx.fee(fee);
+    tx.sign(keys);
+
+    let hex = tx.toString();
+    let newFee = hex.length / 2;
+    if (newFee <= fee) {
+      if (0 === spendableDuffs || spendableDuffs >= DUST) {
+        return tx;
+      }
+      // donate dust to the network
+      newFee += spendableDuffs;
+      spendableDuffs = 0;
+    }
+
+    fee = newFee;
+    return null;
+  }
 }
 
 main()

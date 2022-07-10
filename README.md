@@ -239,6 +239,7 @@ Dash network.
 See **full examples** in:
 
 - [./examples/balance-transfer.js](/examples/balance-transfer.js).
+- [./examples/multi-send.js](/examples/multi-send.js).
 
 Abridged Example:
 
