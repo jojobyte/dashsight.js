@@ -37,7 +37,7 @@ dashsight.getInstantBalance(address).then(function (info) {
 | `dashsight.getUtxos(addrStr)`          |
 | `dashsight.instantSend(txHex)`         |
 
-## `Dashsight.create({ baseUrl })`
+## Dashsight.create({ baseUrl })
 
 Creates an instance of the insight sdk bound to the given baseUrl.
 
@@ -53,13 +53,13 @@ Note: There is no default `baseUrl` (this is supposed to be used in a
 decentralized fashion, after all), but `https://insight.dash.org` might be one
 you trust.
 
-## `dashsight.getBalance(address)` (BUG)
+## dashsight.getBalance(address)
 
 **Do not use**. Use `dashsight.getInstantBalance(address)` instead.
 
 Does not give accurate balances. Provided for completeness / compatibility only.
 
-## `dashsight.getInstantBalance(addr)`
+## dashsight.getInstantBalance(addr)
 
 Takes a normal payment address, gives back the instantaneous balance (reflects
 instant send TXs).
@@ -86,7 +86,7 @@ Example output:
 Note: This is not actually part of Dash's Insight API, but would be if it could
 correctly calculate balances adjusted for Instant Send.
 
-## `dashsight.getTx(txIdHex)`
+## dashsight.getTx(txIdHex)
 
 Get transaction details by its (hex-encoded) ID.
 
@@ -151,7 +151,7 @@ Example output:
 Note: newly minted coins (block rewards) have a different format than payment
 transactions.
 
-## `dashsight.getTxs(addrStr)`
+## dashsight.getTxs(addrStr)
 
 Get all transaction associated with an address.
 
@@ -168,7 +168,7 @@ Example output:
 
 (same as above for `getTx(txid)`)
 
-## `dashsight.getUtxos(addrStr)` (BUG)
+## dashsight.getUtxos(addrStr)
 
 Gets all unspent transaction outputs (the usable "coins") for the given address.
 
@@ -203,7 +203,7 @@ console.log(utxos);
 ]
 ```
 
-## `dashsight.getCoreUtxos(addrStr)`
+## dashsight.getCoreUtxos(addrStr)
 
 Gets all unspent transaction outputs (the usable "coins") for the given address,
 including all information needed by `dashcore-lib.Transaction`.
@@ -231,7 +231,7 @@ Example output:
 ]
 ```
 
-## `dashsight.instantSend(txHex)`
+## dashsight.instantSend(txHex)
 
 Send a signed transaction to Dash's Insight API for relay and broadcast to the
 Dash network.
