@@ -27,6 +27,18 @@ dashsight.getInstantBalance(address).then(function (info) {
 });
 ```
 
+You can also use a number of debug commands:
+
+```bash
+npx -p dashsight dashsight-balance <addr1> [addr2 ...] [--json]
+npx -p dashsight dashsight-instantsend <raw-tx-hex> [--json]
+npx -p dashsight dashsight-tx <txid1> [txid2 ...] [--json]
+npx -p dashsight dashsight-txs <addr1> [addr2 ...] [--json]
+npx -p dashsight dashsight-utxos <addr1> [addr2 ...] [--json]
+```
+
+There some curated addresses and txids in [./examples/](/examples/).
+
 # API
 
 | `Dashsight.create({ baseUrl })`        |
