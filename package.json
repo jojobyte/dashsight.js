@@ -15,7 +15,12 @@
     "fmt": "npx prettier@2 --write '**/*.{md,js}'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "files": ["bin", "lib", "types.js", "typings"],
+  "files": [
+    "bin",
+    "lib",
+    "types.js",
+    "typings"
+  ],
   "directories": {
     "lib": "lib"
   },
@@ -23,7 +28,13 @@
     "type": "git",
     "url": "git+https://github.com/dashhive/dashsight.js.git"
   },
-  "keywords": ["dash", "digital", "cash"],
+  "keywords": [
+    "dash",
+    "insight",
+    "api",
+    "digital",
+    "cash"
+  ],
   "author": "AJ ONeal <coolaj86@gmail.com> (https://coolaj86.com)",
   "license": "SEE LICENSE IN LICENSE",
   "bugs": {
