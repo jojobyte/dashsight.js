@@ -149,7 +149,9 @@ Example output:
 ```
 
 Note: newly minted coins (block rewards) have a different format than payment
-transactions.
+transactions. See the example at:
+
+- [./examples/block-reward-from-coinbase.tx.json](/examples/block-reward-from-coinbase.tx.json)
 
 ## dashsight.getTxs(addrStr)
 
