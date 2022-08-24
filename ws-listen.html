@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <h1>Hello</h1>
+
+    <script src="./ws/browser-ws.js"></script>
+    <script>
+      (function () {
+        "use strict";
+
+        let Ws = window.DashSightWs || require("../ws/");
+
+        let baseUrl = `https://insight.dash.org`;
+
+        async function main() {
+          // ex: inv,dashd/addresstxid
+          let eventnames = "inv".split(",");
+
+          // TODO pass eventnames
+          await Ws.listen(
+            baseUrl,
+            function finder(evname, data) {
+              console.log(evname, data);
+            },
+            { debug: true },
+          );
+        }
+
+        console.log("Trying...");
+        main().catch(function (err) {
+          console.error("Fail:");
+          console.error(err.stack || err);
+        });
+      })();
+    </script>
+  </body>
+</html>

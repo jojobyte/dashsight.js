@@ -1,19 +1,24 @@
 "use strict";
 
 let Ws = module.exports;
+Ws.DashSightWs = Ws;
 
-let request = require("./request.js");
+let request = require("../lib/request.js");
 
 let WSClient = require("ws");
 
 /**
- * @param {Object} opts
- * @param {String} opts.baseUrl
- * @param {CookieStore} opts.cookieStore
- * @param {Boolean} opts.debug
- * @param {Function} opts.onClose
- * @param {Function} opts.onError
- * @param {Function} opts.onMessage
+ * @typedef {Object} WsOpts
+ * @prop {String} baseUrl
+ * @prop {CookieStore} cookieStore - only needed for insight APIs hosted behind an AWS load balancer
+ * @prop {Boolean} debug
+ * @prop {Function} onClose
+ * @prop {Function} onError
+ * @prop {Function} onMessage
+ */
+
+/**
+ * @param {WsOpts} opts
  */
 Ws.create = function ({
   baseUrl,
@@ -24,29 +29,8 @@ Ws.create = function ({
   onMessage,
 }) {
   let wsc = {};
-let Cookies = require("../lib/cookies.js");
-
-  let defaultHeaders = {
-    /*
-    //'Accept-Encoding': gzip, deflate, br
-    "Accept-Language": "en-US,en;q=0.9",
-    "Cache-Control": "no-cache",
-    Origin: "https://insight.dash.org",
-    referer: "https://insight.dash.org/insight/",
-    "sec-fetch-dest": "empty",
-    "sec-fetch-mode": "cors",
-    "sec-fetch-site": "same-origin",
-    "sec-gpc": "1",
-    */
-  };
 
   let Eio3 = {};
-  /*
-  let httpAgent = new Https.Agent({
-    keepAlive: true,
-    maxSockets: 2,
-  });
-  */
 
   // Get `sid` (session id) and ping/pong params
   Eio3.connect = async function () {
@@ -57,12 +41,10 @@ let Cookies = require("../lib/cookies.js");
     let sidResp = await request({
       //agent: httpAgent,
       url: sidUrl,
-      headers: Object.assign(
-        {
-          Cookie: cookies,
-        },
-        defaultHeaders,
-      ),
+      //@ts-ignore - request function is not typed correctly
+      headers: {
+        Cookie: cookies,
+      },
       json: false,
     });
     if (!sidResp.ok) {
@@ -91,6 +73,8 @@ let Cookies = require("../lib/cookies.js");
   /**
    * @param {String} sid
    * @param {String} eventname
+   * @returns "ok"
+   * @throws
    */
   Eio3.subscribe = async function (sid, eventname) {
     let now = Date.now();
@@ -107,13 +91,10 @@ let Cookies = require("../lib/cookies.js");
       //agent: httpAgent,
       method: "POST",
       url: subUrl,
-      headers: Object.assign(
-        {
-          "Content-Type": "text/plain;charset=UTF-8",
-          Cookie: cookies,
-        },
-        defaultHeaders,
-      ),
+      headers: {
+        "Content-Type": "text/plain;charset=UTF-8",
+        Cookie: cookies,
+      },
       body: body,
     });
     if (!subResp.ok) {
@@ -122,6 +103,7 @@ let Cookies = require("../lib/cookies.js");
     }
     await cookieStore.set(subUrl, subResp);
 
+    // "ok"
     return subResp.body;
   };
 
@@ -167,13 +149,10 @@ let Cookies = require("../lib/cookies.js");
     let ws = new WSClient(url, {
       //agent: httpAgent,
       //perMessageDeflate: false,
-      //@ts-ignore - type info is wrong
-      headers: Object.assign(
-        {
-          Cookie: cookies,
-        },
-        defaultHeaders,
-      ),
+      //@ts-ignore - see above
+      headers: {
+        Cookie: cookies,
+      },
     });
 
     let promise = new Promise(function (resolve) {
@@ -319,25 +298,30 @@ let Cookies = require("../lib/cookies.js");
 };
 
 /**
- * @param {String} baseUrl
- * @param {Function} find
+ * @callback Finder
+ * @param {String} evname
+ * @param {InsightSocketEventData} data
  */
-Ws.listen = async function (baseUrl, find) {
+
+/**
+ * @param {String} baseUrl
+ * @param {Finder} find
+ * @param {Partial<WsOpts>} [opts]
+ */
+Ws.listen = async function (baseUrl, find, opts) {
   let ws;
+  let Cookies = require("./cookies.js");
   let p = new Promise(async function (resolve, reject) {
     //@ts-ignore
-    ws = Ws.create({
-      baseUrl: baseUrl,
-      cookieStore: Cookies,
-      //debug: true,
-      onClose: resolve,
-      onError: reject,
-      onMessage:
-        /**
-         * @param {String} evname
-         * @param {InsightSocketEventData} data
-         */
-        async function (evname, data) {
+    ws = Ws.create(
+      Object.assign({}, opts, {
+        baseUrl: baseUrl,
+        cookieStore: Cookies,
+        debug: opts?.debug,
+        onClose: resolve,
+        onError: reject,
+        /** @type Finder */
+        onMessage: async function (evname, data) {
           let result;
           try {
             result = await find(evname, data);
@@ -350,7 +334,8 @@ Ws.listen = async function (baseUrl, find) {
             resolve(result);
           }
         },
-    });
+      }),
+    );
 
     await ws.init().catch(reject);
   });
@@ -367,6 +352,7 @@ Ws.listen = async function (baseUrl, find) {
  * @param {String} addr
  * @param {Number} [amount]
  * @param {Number} [maxTxLockWait]
+ * @param {WsOpts} [opts]
  * @returns {Promise<SocketPayment>}
  */
 Ws.waitForVout = async function (
@@ -374,11 +360,12 @@ Ws.waitForVout = async function (
   addr,
   amount = 0,
   maxTxLockWait = 3000,
+  opts,
 ) {
   // Listen for Response
   /** @type SocketPayment */
   let mempoolTx;
-  return await Ws.listen(baseUrl, findResponse);
+  return await Ws.listen(baseUrl, findResponse, opts);
 
   /**
    * @param {String} evname
