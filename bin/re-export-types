@@ -1,0 +1,17 @@
+#!/bin/sh
+
+my_typedefs="$(
+    grep typedef ./index.js | cut -d ' ' -f5
+)"
+
+rm -f ./types.js
+{
+    echo '// auto-generated with ./bin/re-export-types'
+    echo '// DO NOT EDIT'
+    echo ''
+    echo '/**'
+    for my_type in $my_typedefs; do
+        echo " * @typedef {import('./').${my_type}} ${my_type}"
+    done
+    echo ' */'
+} >> ./types.js
