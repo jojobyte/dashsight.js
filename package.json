@@ -50,6 +50,6 @@
     "dotenv": "^16.0.1"
   },
   "dependencies": {
-    "@root/request": "^1.9.0-8"
+    "@root/request": "^1.9.1"
   }
 }
