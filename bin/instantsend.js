@@ -21,7 +21,8 @@ async function main() {
   let txHex = process.argv[2];
 
   if (!txHex) {
-    console.error(`Usage: balance <address> [address,...]`);
+    // TODO allow multiple [txHex2, ...]
+    console.error(`Usage: instantsend <txHex>`);
     process.exit(1);
     return;
   }
