@@ -24,7 +24,8 @@
     "bin",
     "lib",
     "types.js",
-    "typings"
+    "typings",
+    "ws"
   ],
   "directories": {
     "lib": "lib"
