@@ -356,4 +356,4 @@
   };
 
   console.log("pink", exports.DashSightWs, exports);
-})(("undefined" !== typeof module && module) || window);
+})(("undefined" !== typeof module && module.exports) || window);
