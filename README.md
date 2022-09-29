@@ -10,6 +10,8 @@ npm install --save dashsight
 
 # Usage
 
+## Node.js and WebPack
+
 ```js
 "use strict";
 
@@ -27,6 +29,35 @@ dashsight.getInstantBalance(address).then(function (info) {
 });
 ```
 
+## Browser
+
+```html
+<script src="https://unpkg.com/@root/request@1.9.2/urequest.js"></script>
+<script src="https://unpkg.com/dashsight@1.2.0/dashrequest.js"></script>
+<script src="https://unpkg.com/dashsight@1.2.0/dashsight.js"></script>
+<script src="https://unpkg.com/dashsight@1.2.0/dashsocket.js"></script>
+```
+
+```js
+(async function () {
+  let dashsight = window.DashSight.create({
+    baseUrl: "https://insight.dash.org",
+  });
+
+  // ...
+
+  await window.DashSocket.listen(
+    "https://insight.dash.org",
+    function finder(evname, data) {
+      console.log(evname, data);
+    },
+    { debug: true },
+  );
+})();
+```
+
+## CLI
+
 You can also use a number of debug commands:
 
 ```bash
@@ -41,7 +72,7 @@ There some curated addresses and txids in [./examples/](/examples/).
 
 # API
 
-| `Dashsight.create({ baseUrl })`        |
+| `DashSight.create({ baseUrl })`        |
 | -------------------------------------- |
 | `dashsight.getInstantBalance(addrStr)` |
 | `dashsight.getTx(txIdHex)`             |
@@ -49,14 +80,14 @@ There some curated addresses and txids in [./examples/](/examples/).
 | `dashsight.getUtxos(addrStr)`          |
 | `dashsight.instantSend(txHex)`         |
 
-## Dashsight.create({ baseUrl })
+## DashSight.create({ baseUrl })
 
 Creates an instance of the insight sdk bound to the given baseUrl.
 
 ```js
-let Dashsight = = require("dashsight");
+let DashSight = require("dashsight");
 
-let dashsight Dashsight.create({
+let dashsight = DashSight.create({
   baseUrl: "https://insight.dash.org",
 });
 ```

@@ -1,7 +1,8 @@
 "use strict";
 
 let Ws = module.exports;
-Ws.DashSightWs = Ws;
+Ws.DashSocket = Ws;
+Ws.DashSightWs = Ws; // deprecated
 
 let request = require("../lib/request.js");
 

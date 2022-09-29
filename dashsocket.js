@@ -2,7 +2,8 @@
   "use strict";
 
   let Ws = {};
-  exports.DashSightWs = Ws;
+  exports.DashSocket = Ws;
+  exports.DashSightWs = Ws; // deprecated
 
   /**
    * @param {Object} opts
@@ -354,6 +355,4 @@
     ws.close();
     return result;
   };
-
-  console.log("pink", exports.DashSightWs, exports);
 })(("undefined" !== typeof module && module.exports) || window);

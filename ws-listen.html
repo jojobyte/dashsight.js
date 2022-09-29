@@ -11,7 +11,7 @@
       (function () {
         "use strict";
 
-        let Ws = window.DashSightWs || require("../ws/");
+        let DashSocket = window.DashSocket || require("../ws/");
 
         let baseUrl = `https://insight.dash.org`;
 
@@ -20,7 +20,7 @@
           let eventnames = "inv".split(",");
 
           // TODO pass eventnames
-          await Ws.listen(
+          await DashSocket.listen(
             baseUrl,
             function finder(evname, data) {
               console.log(evname, data);

@@ -7,7 +7,7 @@ require("dotenv").config({ path: ".env.secret" });
 
 //let Https = require("https");
 
-let Ws = require("../ws/");
+let DashSocket = require("../ws/");
 
 let baseUrl = `https://insight.dash.org`;
 
@@ -23,7 +23,7 @@ function help() {
   console.info(``);
   */
 
-  // TODO Ws.waitForVout()
+  // TODO DashSocket.waitForVout()
 }
 
 async function main() {
@@ -44,7 +44,7 @@ async function main() {
   }
 
   // TODO pass eventnames
-  await Ws.listen(
+  await DashSocket.listen(
     baseUrl,
     function finder(evname, data) {
       console.log(evname, data);
