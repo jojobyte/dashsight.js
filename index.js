@@ -1,6 +1,6 @@
 "use strict";
 
-module.exports = require("./lib/insight.js");
+module.exports = require("./dashsight.js");
 
 /**
  * @typedef {Object} InsightUtxo

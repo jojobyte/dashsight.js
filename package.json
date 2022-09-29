@@ -4,8 +4,8 @@
   "description": "SDK for Dash's flavor of the Insight API",
   "main": "index.js",
   "browser": {
-    "./ws/index.js": "./ws/browser-ws.js",
-    "./lib/request.js": "./lib/browser-request.js"
+    "./ws/index.js": "./dashsocket.js",
+    "./lib/request.js": "./dashrequest.js"
   },
   "bin": {
     "dashsight-balance": "bin/balance.js",
