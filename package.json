@@ -22,10 +22,11 @@
   },
   "files": [
     "bin",
-    "lib",
     "dashrequest.js",
     "dashsight.js",
     "dashsocket.js",
+    "index.js",
+    "lib",
     "typings",
     "ws"
   ],
