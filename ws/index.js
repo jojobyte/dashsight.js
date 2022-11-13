@@ -10,12 +10,13 @@ let WSClient = require("ws");
 
 /**
  * @typedef {Object} WsOpts
- * @prop {String} baseUrl
+ * @prop {String} [baseUrl] - (deprecated by dashsocketBaseUrl) ex: https://insight.dash.org
  * @prop {CookieStore} cookieStore - only needed for insight APIs hosted behind an AWS load balancer
  * @prop {Boolean} debug
  * @prop {Function} onClose
  * @prop {Function} onError
  * @prop {Function} onMessage
+ * @prop {String} dashsocketBaseUrl - ex: https://insight.dash.org/socket.io
  */
 
 /**
@@ -23,6 +24,7 @@ let WSClient = require("ws");
  */
 Ws.create = function ({
   baseUrl,
+  dashsocketBaseUrl,
   cookieStore,
   debug,
   onClose,
@@ -33,10 +35,20 @@ Ws.create = function ({
 
   let Eio3 = {};
 
+  if (!dashsocketBaseUrl) {
+    dashsocketBaseUrl = `${baseUrl}/socket.io`;
+  }
+  if (dashsocketBaseUrl.endsWith("/")) {
+    dashsocketBaseUrl = dashsocketBaseUrl.slice(
+      0,
+      dashsocketBaseUrl.length - 1,
+    );
+  }
+
   // Get `sid` (session id) and ping/pong params
   Eio3.connect = async function () {
     let now = Date.now();
-    let sidUrl = `${baseUrl}/socket.io/?EIO=3&transport=polling&t=${now}`;
+    let sidUrl = `${dashsocketBaseUrl}/?EIO=3&transport=polling&t=${now}`;
 
     let cookies = await cookieStore.get(sidUrl);
     let sidResp = await request({
@@ -79,7 +91,7 @@ Ws.create = function ({
    */
   Eio3.subscribe = async function (sid, eventname) {
     let now = Date.now();
-    let subUrl = `${baseUrl}/socket.io/?EIO=3&transport=polling&t=${now}&sid=${sid}`;
+    let subUrl = `${dashsocketBaseUrl}/?EIO=3&transport=polling&t=${now}&sid=${sid}`;
     let sub = JSON.stringify(["subscribe", eventname]);
     // not really sure what this is, couldn't find documentation for it
     let typ = 422; // 4 = MESSAGE, 2 = EVENT, 2 = ???
@@ -111,7 +123,7 @@ Ws.create = function ({
   /*
   Eio3.poll = async function (sid) {
     let now = Date.now();
-    let pollUrl = `${baseUrl}/socket.io/?EIO=3&transport=polling&t=${now}&sid=${sid}`;
+    let pollUrl = `${dashsocketBaseUrl}/?EIO=3&transport=polling&t=${now}&sid=${sid}`;
 
     let cookies = await cookieStore.get(pollUrl);
     let pollResp = await request({
@@ -139,14 +151,10 @@ Ws.create = function ({
    * @param {String} sid - session id (associated with AWS ALB cookie)
    */
   Eio3.connectWs = async function (sid) {
-    baseUrl = baseUrl.slice(4); // trim leading 'http'
-    let url =
-      `ws${baseUrl}/socket.io/?EIO=3&transport=websocket&sid=${sid}`.replace(
-        "http",
-        "ws",
-      );
+    let dashsocketBaseUrlPart = dashsocketBaseUrl.slice(4); // trim leading 'http'
+    let url = `ws${dashsocketBaseUrlPart}/?EIO=3&transport=websocket&sid=${sid}`;
 
-    let cookies = await cookieStore.get(`${baseUrl}/`);
+    let cookies = await cookieStore.get(`${dashsocketBaseUrl}/`);
     let ws = new WSClient(url, {
       //agent: httpAgent,
       //perMessageDeflate: false,
@@ -305,18 +313,22 @@ Ws.create = function ({
  */
 
 /**
- * @param {String} baseUrl
+ * @param {String} dashsocketBaseUrl
  * @param {Finder} find
  * @param {Partial<WsOpts>} [opts]
  */
-Ws.listen = async function (baseUrl, find, opts) {
+Ws.listen = async function (dashsocketBaseUrl, find, opts) {
+  if ("https://insight.dash.org" === dashsocketBaseUrl) {
+    dashsocketBaseUrl = "https://insight.dash.org/socket.io";
+  }
+
   let ws;
   let Cookies = require("./cookies.js");
   let p = new Promise(async function (resolve, reject) {
     //@ts-ignore
     ws = Ws.create(
       Object.assign({}, opts, {
-        baseUrl: baseUrl,
+        dashsocketBaseUrl: dashsocketBaseUrl,
         cookieStore: Cookies,
         debug: opts?.debug,
         onClose: resolve,
@@ -349,7 +361,7 @@ Ws.listen = async function (baseUrl, find, opts) {
 // TODO waitForVouts(baseUrl, [{ address, satoshis }])
 
 /**
- * @param {String} baseUrl
+ * @param {String} dashsocketBaseUrl
  * @param {String} addr
  * @param {Number} [amount]
  * @param {Number} [maxTxLockWait]
@@ -357,16 +369,20 @@ Ws.listen = async function (baseUrl, find, opts) {
  * @returns {Promise<SocketPayment>}
  */
 Ws.waitForVout = async function (
-  baseUrl,
+  dashsocketBaseUrl,
   addr,
   amount = 0,
   maxTxLockWait = 3000,
-  opts,
+  opts = {},
 ) {
+  if ("https://insight.dash.org" === dashsocketBaseUrl) {
+    dashsocketBaseUrl = "https://insight.dash.org/socket.io";
+  }
+
   // Listen for Response
   /** @type SocketPayment */
   let mempoolTx;
-  return await Ws.listen(baseUrl, findResponse, opts);
+  return await Ws.listen(dashsocketBaseUrl, findResponse, opts);
 
   /**
    * @param {String} evname

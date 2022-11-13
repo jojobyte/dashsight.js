@@ -18,10 +18,16 @@ npm install --save dashsight
 require("dotenv").config({ path: ".env" });
 
 let dashsightBaseUrl =
-  process.env.INSIGHT_BASE_URL || "https://insight.dash.org";
+  process.env.DASHSIGHT_BASE_URL || "https://dashnode.duckdns.org/insight-api";
+let dashsocketBaseUrl =
+  process.env.DASHSOCKET_BASE_URL || "https://insight.dash.org/socket.io";
+let insightBaseUrl =
+  process.env.DASHSIGHT_BASE_URL || "https://insight.dash.org/insight-api";
 
 let dashsight = require("dashsight").create({
-  baseUrl: dashsightBaseUrl,
+  dashsightBaseUrl: dashsightBaseUrl,
+  dashsocketBaseUrl: dashsocketBaseUrl,
+  insightBaseUrl: insightBaseUrl,
 });
 
 dashsight.getInstantBalance(address).then(function (info) {
@@ -41,13 +47,15 @@ dashsight.getInstantBalance(address).then(function (info) {
 ```js
 (async function () {
   let dashsight = window.DashSight.create({
-    baseUrl: "https://insight.dash.org",
+    dashsightBaseUrl: "https://dashnode.duckdns.org/insight-api",
+    dashsocketBaseUrl: "https://insight.dash.org/socket.io",
+    insightBaseUrl: "https://insight.dash.org/insight-api",
   });
 
   // ...
 
   await window.DashSocket.listen(
-    "https://insight.dash.org",
+    "https://insight.dash.org/socket.io",
     function finder(evname, data) {
       console.log(evname, data);
     },
@@ -72,29 +80,31 @@ There some curated addresses and txids in [./examples/](/examples/).
 
 # API
 
-| `DashSight.create({ baseUrl })`        |
-| -------------------------------------- |
-| `dashsight.getInstantBalance(addrStr)` |
-| `dashsight.getTx(txIdHex)`             |
-| `dashsight.getTxs(addrStr, maxPages)`  |
-| `dashsight.getUtxos(addrStr)`          |
-| `dashsight.instantSend(txHex)`         |
+| `DashSight.create({ dashsightBaseUrl, dashsocketBaseUrl })` |
+| ----------------------------------------------------------- |
+| `dashsight.getInstantBalance(addrStr)`                      |
+| `dashsight.getTx(txIdHex)`                                  |
+| `dashsight.getTxs(addrStr, maxPages)`                       |
+| `dashsight.getUtxos(addrStr)`                               |
+| `dashsight.instantSend(txHex)`                              |
 
-## DashSight.create({ baseUrl })
+## DashSight.create({ dashsightBaseUrl, dashsocketBaseUrl })
 
-Creates an instance of the insight sdk bound to the given baseUrl.
+Creates an instance of the insight sdk bound to the given base urls.
 
 ```js
 let DashSight = require("dashsight");
 
 let dashsight = DashSight.create({
-  baseUrl: "https://insight.dash.org",
+  dashsightBaseUrl: "https://dashnode.duckdns.org/insight-api",
+  dashsocketBaseUrl: "https://insight.dash.org/socket.io",
+  insightBaseUrl: "https://insight.dash.org/insight-api",
 });
 ```
 
-Note: There is no default `baseUrl` (this is supposed to be used in a
-decentralized fashion, after all), but `https://insight.dash.org` might be one
-you trust.
+Note: There are no default base URLs (this is supposed to be used in a
+decentralized fashion, after all), but the ones given above are a good starting
+point if you don't have your own.
 
 ## dashsight.getBalance(address)
 

@@ -6,16 +6,22 @@
   exports.DashSightWs = Ws; // deprecated
 
   /**
-   * @param {Object} opts
-   * @param {String} opts.baseUrl
-   * @param {null} opts.cookieStore
-   * @param {Boolean} opts.debug
-   * @param {Function} opts.onClose
-   * @param {Function} opts.onError
-   * @param {Function} opts.onMessage
+   * @typedef WsOpts
+   * @prop {String} [baseUrl] - (deprecated by dashsocketBaseUrl) ex: https://insight.dash.org
+   * @prop {CookieStore} cookieStore - only needed for insight APIs hosted behind an AWS load balancer
+   * @prop {Boolean} debug
+   * @prop {Function} onClose
+   * @prop {Function} onError
+   * @prop {Function} onMessage
+   * @prop {String} dashsocketBaseUrl - ex: https://insight.dash.org/socket.io
+   */
+
+  /**
+   * @param {WsOpts} opts
    */
   Ws.create = function ({
     baseUrl,
+    dashsocketBaseUrl,
     cookieStore = null,
     debug,
     onClose,
@@ -26,10 +32,20 @@
 
     let Eio3 = {};
 
+    if (!dashsocketBaseUrl) {
+      dashsocketBaseUrl = `${baseUrl}/socket.io`;
+    }
+    if (dashsocketBaseUrl.endsWith("/")) {
+      dashsocketBaseUrl = dashsocketBaseUrl.slice(
+        0,
+        dashsocketBaseUrl.length - 1,
+      );
+    }
+
     // Get `sid` (session id) and ping/pong params
     Eio3.connect = async function () {
       let now = Date.now();
-      let sidUrl = `${baseUrl}/socket.io/?EIO=3&transport=polling&t=${now}`;
+      let sidUrl = `${dashsocketBaseUrl}/?EIO=3&transport=polling&t=${now}`;
 
       let sidResp = await window.fetch(sidUrl, {
         mode: "cors",
@@ -56,7 +72,7 @@
      */
     Eio3.subscribe = async function (sid, eventname) {
       let now = Date.now();
-      let subUrl = `${baseUrl}/socket.io/?EIO=3&transport=polling&t=${now}&sid=${sid}`;
+      let subUrl = `${dashsocketBaseUrl}/?EIO=3&transport=polling&t=${now}&sid=${sid}`;
       let body = stringifySub(eventname);
 
       let subResp = await window.fetch(subUrl, {
@@ -81,7 +97,7 @@
     /*
   Eio3.poll = async function (sid) {
     let now = Date.now();
-    let pollUrl = `${baseUrl}/socket.io/?EIO=3&transport=polling&t=${now}&sid=${sid}`;
+    let pollUrl = `${dashsocketBaseUrl}/?EIO=3&transport=polling&t=${now}&sid=${sid}`;
 
     let cookies = await cookieStore.get(pollUrl);
     let pollResp = await request({
@@ -109,12 +125,8 @@
      * @param {String} sid - session id (associated with AWS ALB cookie)
      */
     Eio3.connectWs = async function (sid) {
-      baseUrl = baseUrl.slice(4); // trim leading 'http'
-      let url =
-        `ws${baseUrl}/socket.io/?EIO=3&transport=websocket&sid=${sid}`.replace(
-          "http",
-          "ws",
-        );
+      let dashsocketBaseUrlPart = dashsocketBaseUrl.slice(4); // trim leading 'http'
+      let url = `ws${dashsocketBaseUrlPart}/?EIO=3&transport=websocket&sid=${sid}`;
 
       let ws = new WebSocket(url, []);
 
@@ -316,17 +328,20 @@
    */
 
   /**
-   * @param {String} baseUrl
+   * @param {String} dashsocketBaseUrl
    * @param {Finder} find
    * @param {Partial<WsOpts>} [opts]
    */
-  Ws.listen = async function (baseUrl, find, opts) {
+  Ws.listen = async function (dashsocketBaseUrl, find, opts) {
+    if ("https://insight.dash.org" === dashsocketBaseUrl) {
+      dashsocketBaseUrl = "https://insight.dash.org/socket.io";
+    }
     let ws;
     let p = new Promise(async function (resolve, reject) {
       //@ts-ignore
       ws = Ws.create(
         Object.assign({}, opts, {
-          baseUrl: baseUrl,
+          dashsocketBaseUrl: dashsocketBaseUrl,
           cookieStore: null,
           debug: opts?.debug,
           onClose: resolve,

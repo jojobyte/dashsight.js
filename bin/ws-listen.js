@@ -9,7 +9,8 @@ require("dotenv").config({ path: ".env.secret" });
 
 let DashSocket = require("../ws/");
 
-let baseUrl = `https://insight.dash.org`;
+let dashsocketBaseUrl =
+  process.env.DASHSIGHT_WS_BASE_URL || `https://insight.dash.org/socket.io`;
 
 function help() {
   console.info(``);
@@ -27,6 +28,8 @@ function help() {
 }
 
 async function main() {
+  console.info("WS Base URL:", dashsocketBaseUrl);
+
   // ex: inv,dashd/addresstxid
   let eventnames = (process.argv[2] || "inv").split(",");
 
@@ -45,7 +48,7 @@ async function main() {
 
   // TODO pass eventnames
   await DashSocket.listen(
-    baseUrl,
+    dashsocketBaseUrl,
     function finder(evname, data) {
       console.log(evname, data);
     },

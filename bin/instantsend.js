@@ -7,13 +7,18 @@
 
 require("dotenv").config({ path: ".env" });
 
+let baseUrl = process.env.INSIGHT_BASE_URL || "https://insight.dash.org";
 let dashsightBaseUrl =
-  process.env.INSIGHT_BASE_URL || "https://insight.dash.org";
+  // "https://dashnode.duckdns.org/insight-api";
+  process.env.DASHSIGHT_BASE_URL || "https://insight.dash.org/insight-api";
+if (!dashsightBaseUrl) {
+  dashsightBaseUrl = `${baseUrl}/insight-api`;
+}
 
 let Dashsight = require("../");
-
 let dashsight = Dashsight.create({
-  baseUrl: dashsightBaseUrl,
+  baseUrl,
+  dashsightBaseUrl,
 });
 
 async function main() {
@@ -26,6 +31,10 @@ async function main() {
     process.exit(1);
     return;
   }
+
+  // debug
+  console.error();
+  console.error("Dashsight Base URL:", dashsightBaseUrl);
 
   let result = await dashsight.instantSend(txHex);
   if (json) {

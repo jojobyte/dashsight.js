@@ -53,9 +53,13 @@
     "dotenv": "^16.0.1"
   },
   "dependencies": {
-    "@root/request": "^1.9.1"
+    "@root/request": "^1.9.2"
   },
   "devDependencies": {
-    "@types/tough-cookie": "^4.0.2"
+    "@dashevo/dashcore-lib": "^0.19.44",
+    "@root/base58check": "^1.0.0",
+    "@types/tough-cookie": "^4.0.2",
+    "ripemd160": "^2.0.2",
+    "secp256k1": "^4.0.3"
   }
 }

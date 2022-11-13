@@ -13,11 +13,45 @@
   /** @typedef {import('./').InsightBalance} InsightBalance */
 
   /**
-   * @param {Object} opts
-   * @param {String} opts.baseUrl
+   * @typedef DashsightInstance
+   * TODO
    */
-  Dashsight.create = function ({ baseUrl }) {
+
+  /**
+   * @param {Object} opts
+   * @param {String} opts.baseUrl - for the Insight API
+   * @param {String} [opts.insightBaseUrl] - for regular Insight features, includes prefix
+   * @param {String} [opts.dashsightBaseUrl] - for Dash-specific features, such as instant send
+   * @param {String} [opts.dashsocketBaseUrl] - for WebSocket notifications
+   */
+  Dashsight.create = function ({
+    baseUrl,
+    dashsightBaseUrl,
+    insightBaseUrl,
+    dashsocketBaseUrl,
+  }) {
     let insight = {};
+
+    if (!dashsightBaseUrl) {
+      dashsightBaseUrl = `${baseUrl}/insight-api`;
+    }
+    if (dashsightBaseUrl.endsWith("/")) {
+      dashsightBaseUrl = dashsightBaseUrl.slice(0, dashsightBaseUrl.length - 1);
+    }
+
+    if (!insightBaseUrl) {
+      insightBaseUrl = dashsightBaseUrl;
+    }
+    if (insightBaseUrl.endsWith("/")) {
+      insightBaseUrl = insightBaseUrl.slice(0, insightBaseUrl.length - 1);
+    }
+
+    if (!dashsocketBaseUrl) {
+      dashsocketBaseUrl = `${baseUrl}/socket.io`;
+    }
+    if (dashsocketBaseUrl.endsWith("/")) {
+      dashsocketBaseUrl = dashsocketBaseUrl.slice(0, dashsocketBaseUrl.length - 1);
+    }
 
     /**
      * Don't use this with instantSend
@@ -27,7 +61,7 @@
     insight.getBalance = async function (address) {
       console.warn(`warn: getBalance(pubkey) doesn't account for instantSend,`);
       console.warn(`      consider (await getUtxos()).reduce(countSatoshis)`);
-      let txUrl = `${baseUrl}/insight-api/addr/${address}/?noTxList=1`;
+      let txUrl = `${insightBaseUrl}/addr/${address}/?noTxList=1`;
       let txResp = await request({ url: txUrl, json: true });
 
       /** @type {InsightBalance} */
@@ -65,7 +99,7 @@
      * @returns {Promise<Array<InsightUtxo>>}
      */
     insight.getUtxos = async function (address) {
-      let utxoUrl = `${baseUrl}/insight-api/addr/${address}/utxo`;
+      let utxoUrl = `${insightBaseUrl}/addr/${address}/utxo`;
       let utxoResp = await request({ url: utxoUrl, json: true });
 
       /** @type Array<InsightUtxo> */
@@ -95,7 +129,7 @@
      * @returns {Promise<InsightTx>}
      */
     insight.getTx = async function (txid) {
-      let txUrl = `${baseUrl}/insight-api/tx/${txid}`;
+      let txUrl = `${insightBaseUrl}/tx/${txid}`;
       let txResp = await request({ url: txUrl, json: true });
 
       /** @type InsightTx */
@@ -109,7 +143,7 @@
      * @returns {Promise<InsightTxResponse>}
      */
     insight.getTxs = async function (addr, maxPages) {
-      let txUrl = `${baseUrl}/insight-api/txs?address=${addr}&pageNum=0`;
+      let txUrl = `${insightBaseUrl}/txs?address=${addr}&pageNum=0`;
       let txResp = await request({ url: txUrl, json: true });
 
       /** @type {InsightTxResponse} */
@@ -128,7 +162,7 @@
       let pagesTotal = Math.min(body.pagesTotal, maxPages);
       for (let cursor = 1; cursor < pagesTotal; cursor += 1) {
         let nextResp = await request({
-          url: `${baseUrl}/insight-api/txs?address=${addr}&pageNum=${cursor}`,
+          url: `${insightBaseUrl}/txs?address=${addr}&pageNum=${cursor}`,
           json: true,
         });
         // Note: this could still be wrong, but I don't think we have
@@ -142,7 +176,10 @@
      * @param {String} hexTx
      */
     insight.instantSend = async function (hexTx) {
-      let instUrl = `${baseUrl}/insight-api-dash/tx/sendix`;
+      // Ex:
+      //   - https://insight.dash.org/insight-api-dash/tx/sendix
+      //   - https://dashnode.duckdns.org/insight-api/tx/sendix
+      let instUrl = `${dashsightBaseUrl}/tx/sendix`;
       let reqObj = {
         method: "POST",
         url: instUrl,
