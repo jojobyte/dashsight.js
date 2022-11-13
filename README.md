@@ -18,7 +18,7 @@ npm install --save dashsight
 require("dotenv").config({ path: ".env" });
 
 let dashsightBaseUrl =
-  process.env.DASHSIGHT_BASE_URL || "https://dashnode.duckdns.org/insight-api";
+  process.env.DASHSIGHT_BASE_URL || "https://dashsight.dashincubator.dev/insight-api";
 let dashsocketBaseUrl =
   process.env.DASHSOCKET_BASE_URL || "https://insight.dash.org/socket.io";
 let insightBaseUrl =
@@ -47,7 +47,7 @@ dashsight.getInstantBalance(address).then(function (info) {
 ```js
 (async function () {
   let dashsight = window.DashSight.create({
-    dashsightBaseUrl: "https://dashnode.duckdns.org/insight-api",
+    dashsightBaseUrl: "https://dashsight.dashincubator.dev/insight-api",
     dashsocketBaseUrl: "https://insight.dash.org/socket.io",
     insightBaseUrl: "https://insight.dash.org/insight-api",
   });
@@ -96,7 +96,7 @@ Creates an instance of the insight sdk bound to the given base urls.
 let DashSight = require("dashsight");
 
 let dashsight = DashSight.create({
-  dashsightBaseUrl: "https://dashnode.duckdns.org/insight-api",
+  dashsightBaseUrl: "https://dashsight.dashincubator.dev/insight-api",
   dashsocketBaseUrl: "https://insight.dash.org/socket.io",
   insightBaseUrl: "https://insight.dash.org/insight-api",
 });

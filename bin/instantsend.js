@@ -9,7 +9,7 @@ require("dotenv").config({ path: ".env" });
 
 let baseUrl = process.env.INSIGHT_BASE_URL || "https://insight.dash.org";
 let dashsightBaseUrl =
-  // "https://dashnode.duckdns.org/insight-api";
+  // "https://dashsight.dashincubator.dev/insight-api";
   process.env.DASHSIGHT_BASE_URL || "https://insight.dash.org/insight-api";
 if (!dashsightBaseUrl) {
   dashsightBaseUrl = `${baseUrl}/insight-api`;

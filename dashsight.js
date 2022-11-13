@@ -178,7 +178,7 @@
     insight.instantSend = async function (hexTx) {
       // Ex:
       //   - https://insight.dash.org/insight-api-dash/tx/sendix
-      //   - https://dashnode.duckdns.org/insight-api/tx/sendix
+      //   - https://dashsight.dashincubator.dev/insight-api/tx/sendix
       let instUrl = `${dashsightBaseUrl}/tx/sendix`;
       let reqObj = {
         method: "POST",
