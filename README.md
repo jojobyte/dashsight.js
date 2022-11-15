@@ -22,7 +22,7 @@ let dashsightBaseUrl =
 let dashsocketBaseUrl =
   process.env.DASHSOCKET_BASE_URL || "https://insight.dash.org/socket.io";
 let insightBaseUrl =
-  process.env.DASHSIGHT_BASE_URL || "https://insight.dash.org/insight-api";
+  process.env.INSIGHT_BASE_URL || "https://insight.dash.org/insight-api";
 
 let dashsight = require("dashsight").create({
   dashsightBaseUrl: dashsightBaseUrl,
