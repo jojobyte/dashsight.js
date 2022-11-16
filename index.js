@@ -3,6 +3,62 @@
 module.exports = require("./dashsight.js");
 
 /**
+ * @typedef DashSightInstance
+ * @prop {GetBalance} getBalance
+ * @prop {GetCoreUtxos} getCoreUtxos
+ * @prop {GetInstantBalance} getInstantBalance
+ * @prop {GetTx} getTx
+ * @prop {GetTxs} getTxs
+ * @prop {GetUtxos} getUtxos
+ */
+
+/**
+ * Don't use this with instantSend
+ * @callback GetBalance
+ * @param {String} address
+ * @returns {Promise<InsightBalance>}
+ */
+
+/**
+ * Instant Balance is accurate with Instant Send
+ * @callback GetInstantBalance
+ * @param {String} address
+ * @returns {Promise<InstantBalance>}
+ */
+
+/**
+ * @callback GetUtxos
+ * @param {String} address
+ * @returns {Promise<Array<InsightUtxo>>}
+ */
+
+/**
+ * @callback GetCoreUtxos
+ * @param {String} address
+ * @returns {Promise<Array<CoreUtxo>>}
+ *
+ * @TODO handle multiple input addresses
+ */
+
+/**
+ * @callback GetTx
+ * @param {String} txid
+ * @returns {Promise<InsightTx>}
+ */
+
+/**
+ * @callback GetTxs
+ * @param {String} addr
+ * @param {Number} maxPages
+ * @returns {Promise<InsightTxResponse>}
+ */
+
+/**
+ * @callback InstantSend
+ * @param {String} hexTx
+ */
+
+/**
  * @typedef {Object} InsightUtxo
  * @property {String} address
  * @property {String} txid
