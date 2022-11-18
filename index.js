@@ -61,7 +61,7 @@ module.exports = require("./dashsight.js");
  */
 
 /**
- * @callback ToCoreUtxo
+ * @callback ToCoreUtxos
  * @param {Array<InsightUtxo>} insightUtxos
  * @returns {Array<CoreUtxo>}
  */
