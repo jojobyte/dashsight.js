@@ -28,10 +28,10 @@
 
   /**
    * @param {Object} opts
-   * @param {String} opts.baseUrl - for the Insight API
-   * @param {String} [opts.insightBaseUrl] - for regular Insight features, includes prefix
-   * @param {String} [opts.dashsightBaseUrl] - for Dash-specific features, such as instant send
-   * @param {String} [opts.dashsocketBaseUrl] - for WebSocket notifications
+   * @param {String} [opts.baseUrl] - for the Insight API
+   * @param {String} opts.insightBaseUrl - for regular Insight features, includes prefix
+   * @param {String} opts.dashsightBaseUrl - for Dash-specific features, such as instant send
+   * @param {String} opts.dashsocketBaseUrl - for WebSocket notifications
    * @returns {DashSightInstance}
    */
   Dashsight.create = function ({
@@ -43,7 +43,7 @@
     let insight = {};
 
     if (!dashsightBaseUrl) {
-      dashsightBaseUrl = `${baseUrl}/insight-api`;
+      dashsightBaseUrl = insightBaseUrl || `${baseUrl}/insight-api`;
     }
     if (dashsightBaseUrl.endsWith("/")) {
       dashsightBaseUrl = dashsightBaseUrl.slice(0, dashsightBaseUrl.length - 1);
