@@ -25,6 +25,7 @@
   /** @typedef {import('./').GetTx} GetTx */
   /** @typedef {import('./').GetTxs} GetTxs */
   /** @typedef {import('./').GetUtxos} GetUtxos */
+  /** @typedef {import('./').ToCoreUtxos} ToCoreUtxos */
 
   /**
    * @param {Object} opts
@@ -114,7 +115,7 @@
       let result = await insight.getTxs(address, 1);
       if (result.pagesTotal > 1) {
         let utxos = await insight.getUtxos(address);
-        return await getCoreUtxos(utxos);
+        return insight.toCoreUtxos(utxos);
       }
 
       let coreUtxos = await getTxUtxos(address, result.txs);
@@ -184,46 +185,20 @@
       return txResp.toJSON();
     };
 
-    /**
-     * @param {Array<InsightUtxo>} body
-     */
-    async function getCoreUtxos(body) {
-      // TODO import type from (new) dash lib
-      /** @type Array<CoreUtxo> */
-      let utxos = [];
-
-      await body.reduce(async function (promise, utxo) {
-        await promise;
-
-        // TODO [performance] we could get the first page of TXs of the address
-        let tx = await insight.getTx(utxo.txid);
-
-        let utxoIndex = -1;
-        tx.vout.some(function (vout, index) {
-          if (!vout.scriptPubKey?.addresses?.includes(utxo.address)) {
-            return false;
-          }
-
-          let satoshis = Math.round(parseFloat(vout.value) * DUFFS);
-          if (utxo.satoshis !== satoshis) {
-            return false;
-          }
-
-          utxoIndex = index;
-          return true;
-        });
-
-        utxos.push({
+    /** @type {ToCoreUtxos} */
+    insight.toCoreUtxos = function (insightUtxos) {
+      let coreUtxos = insightUtxos.map(function (utxo) {
+        return {
           txId: utxo.txid,
-          outputIndex: utxoIndex,
+          outputIndex: utxo.vout,
           address: utxo.address,
           script: utxo.scriptPubKey,
           satoshis: utxo.satoshis,
-        });
-      }, Promise.resolve());
+        };
+      });
 
-      return utxos;
-    }
+      return coreUtxos;
+    };
 
     /**
      * Handles UTXOs that have NO MORE THAN ONE page of transactions

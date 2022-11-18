@@ -10,6 +10,8 @@ module.exports = require("./dashsight.js");
  * @prop {GetTx} getTx
  * @prop {GetTxs} getTxs
  * @prop {GetUtxos} getUtxos
+ * @prop {InstantSend} instantSend
+ * @prop {ToCoreUtxos} toCoreUtxos
  */
 
 /**
@@ -59,13 +61,19 @@ module.exports = require("./dashsight.js");
  */
 
 /**
+ * @callback ToCoreUtxo
+ * @param {Array<InsightUtxo>} insightUtxos
+ * @returns {Array<CoreUtxo>}
+ */
+
+/**
  * @typedef {Object} InsightUtxo
- * @property {String} address
- * @property {String} txid
- * @property {Number} vout
+ * @property {String} address - pay addr (base58check pubkey hash)
+ * @property {String} txid - hex tx id
+ * @property {Number} vout - output index
  * @property {String} scriptPubKey
- * @property {Number} amount
- * @property {Number} satoshis
+ * @property {Number} amount - DASH
+ * @property {Number} satoshis - duffs
  * @property {Number} height
  * @property {Number} confirmations
  */
@@ -140,8 +148,8 @@ module.exports = require("./dashsight.js");
  * @typedef {Object} InsightTx
  * @property {String} txid
  * @property {Number} confirmations
- * @property {Number} time
- * @property {Boolean} txlock
+ * @property {Number} time - ??
+ * @property {Boolean} txlock - instant send
  * @property {Number} version
  * @property {Array<InsightTxVin>} vin
  * @property {Array<InsightTxVout>} vout
