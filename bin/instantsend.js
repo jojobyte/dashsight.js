@@ -7,18 +7,19 @@
 
 require("dotenv").config({ path: ".env" });
 
-let baseUrl = process.env.INSIGHT_BASE_URL || "https://insight.dash.org";
 let dashsightBaseUrl =
-  // "https://dashsight.dashincubator.dev/insight-api";
-  process.env.DASHSIGHT_BASE_URL || "https://insight.dash.org/insight-api";
-if (!dashsightBaseUrl) {
-  dashsightBaseUrl = `${baseUrl}/insight-api`;
-}
+  process.env.DASHSIGHT_BASE_URL ||
+  "https://dashsight.dashincubator.dev/insight-api";
+let dashsocketBaseUrl =
+  process.env.DASHSOCKET_BASE_URL || "https://insight.dash.org/socket.io";
+let insightBaseUrl =
+  process.env.INSIGHT_BASE_URL || "https://insight.dash.org/insight-api";
 
 let Dashsight = require("../");
 let dashsight = Dashsight.create({
-  baseUrl,
   dashsightBaseUrl,
+  dashsocketBaseUrl,
+  insightBaseUrl,
 });
 
 async function main() {

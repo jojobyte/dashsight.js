@@ -10,16 +10,15 @@ let Fs = require("node:fs/promises");
 let Dashcore = require("@dashevo/dashcore-lib");
 let Transaction = Dashcore.Transaction;
 
-let baseUrl = process.env.INSIGHT_BASE_URL || "https://insight.dash.org";
 let dashsightBaseUrl =
   process.env.DASHSIGHT_BASE_URL || "https://insight.dash.org/insight-api";
 
 let Dashsight = require("../");
 
 let dashsight = Dashsight.create({
-  baseUrl: baseUrl,
   insightBaseUrl: dashsightBaseUrl,
   dashsightBaseUrl: dashsightBaseUrl,
+  dashsocketBaseUrl: "", // not needed here
 });
 
 let Pub = require("./_wif-to-addr.js");
