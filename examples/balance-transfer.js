@@ -215,7 +215,6 @@ async function main() {
   //     2002 => 2002 (stable, exits)
   let ITER_ERROR = feeSpread + 1;
   for (let i = 0; ; i += 1) {
-    console.log("DEBUG iter, fee", i, fee);
     if (i >= ITER_ERROR) {
       throw new Error("SANITY FAIL: more loops than possible fee combos");
     }
@@ -227,7 +226,6 @@ async function main() {
       );
     }
 
-    console.log("DEBUG", inputs);
     txInfo = {
       version: 3, // (will be) optional
       inputs: inputs,
@@ -241,7 +239,6 @@ async function main() {
       locktime: 0, // optional
     };
     txInfoSigned = await dashtx.hashAndSignAll(txInfo);
-    console.log("DEBUG tx", txInfoSigned.transaction);
     txHex = txInfoSigned.transaction.toString();
 
     let newFee = Math.max(fee, txHex.length / 2);
@@ -253,19 +250,25 @@ async function main() {
   }
 
   console.info();
-  console.info(
-    "Transaction Hex: (inspect at https://live.blockcypher.com/dash/decodetx/)",
-  );
+  console.info("Transaction Hex:");
+  console.info();
   console.info(txHex);
   console.info();
-  process.exit(0);
 
-  return;
+  console.info("Inspect at https://live.blockcypher.com/dash/decodetx/");
+  console.info();
+  console.info("Or Broadcast to the network:");
+  console.info();
+  console.info("    # replace the '<txHex>' with Transaction Hex above");
+  console.info("    dashsight instantsend '03000000...88ac00000000'");
+  console.info();
+  /*
   let result = await dashsight.instantSend(txHex);
 
   console.info("Transaction ID:");
   console.info(result.body.txid);
   console.info();
+  */
 }
 
 /**
