@@ -10,25 +10,137 @@
 
 require("dotenv").config({ path: ".env" });
 
-let dashsightBaseUrl =
-  process.env.INSIGHT_BASE_URL || "https://insight.dash.org";
+let Fs = require("node:fs/promises");
 
 let Dashsight = require("../");
 
+let dashsightBaseUrl =
+  process.env.DASHSIGHT_BASE_URL ||
+  "https://dashsight.dashincubator.dev/insight-api";
+let insightBaseUrl =
+  process.env.INSIGHT_BASE_URL || "https://insight.dash.org/insight-api";
+
 let dashsight = Dashsight.create({
-  baseUrl: dashsightBaseUrl,
+  dashsightBaseUrl: dashsightBaseUrl,
+  insightBaseUrl: insightBaseUrl,
+  dashsocketBaseUrl: "", // not needed here
 });
 
-let Dashcore = require("@dashevo/dashcore-lib");
-let Transaction = Dashcore.Transaction;
+let Base58Check = require("@dashincubator/base58check").Base58Check;
+let b58c = Base58Check.create({
+  pubKeyHashVersion: "4c",
+  privateKeyVersion: "cc",
+});
+let BlockTx = require("@dashincubator/blocktx");
+let dashtx = BlockTx.create({
+  version: 3,
+  sign: signTx,
+  toPublicKey: privateKeyToPublicKey,
+});
+let RIPEMD160 = require("@dashincubator/ripemd160");
+let Secp256k1 = require("@dashincubator/secp256k1");
+let Crypto = exports.crypto || require("../shims/crypto-node.js");
 
-// the cost of a typical single input, single output tx
-const BASE_FEE = 192;
-const DUST = 2000;
+async function signTx({ privateKey, hash }) {
+  let sigOpts = { canonical: true };
+  let sigBuf = await Secp256k1.sign(hash, privateKey, sigOpts);
+  return BlockTx.utils.u8ToHex(sigBuf);
+}
+
+function privateKeyToPublicKey(privBuf) {
+  let isCompressed = true;
+  let pubBuf = Secp256k1.getPublicKey(privBuf, isCompressed);
+  let pubHex = BlockTx.utils.u8ToHex(pubBuf);
+  return pubHex;
+}
+
+async function hashPublicKey(pubBuf) {
+  //console.log("DEBUG pubBuf", pubBuf);
+  let sha = await Crypto.subtle.digest("SHA-256", pubBuf);
+  let shaU8 = new Uint8Array(sha);
+  //console.log("DEBUG shaU8", shaU8);
+  let ripemd = RIPEMD160.create();
+  let hash = ripemd.update(shaU8);
+  //console.log("DEBUG hash", hash);
+  let pkh = hash.digest("hex");
+  //console.log("DEBUG pkh", pkh);
+  return pkh;
+}
+
+async function wifToPrivateKey(wif) {
+  let parts = await b58c.verify(wif);
+  let privBuf = Buffer.from(parts.privateKey, "hex");
+  return privBuf;
+}
+
+/**
+ * @param {String} wif
+ * @returns {Promise<String>}
+ */
+async function wifToAddr(wif) {
+  let parts = await b58c.verify(wif);
+  let privBuf = Buffer.from(parts.privateKey, "hex");
+  let isCompressed = true;
+  let pubBuf = Secp256k1.getPublicKey(privBuf, isCompressed);
+  let pubKeyHash = await hashPublicKey(pubBuf);
+  let addr = await b58c.encode({
+    version: "4c",
+    pubKeyHash: pubKeyHash,
+  });
+  return addr;
+}
+
+async function addrToPubKeyHash(addr) {
+  let parts = await b58c.verify(addr);
+  return parts.pubKeyHash;
+}
+
+// the cost of a typical, single input, single output tx is 191-193,
+// depending on signature padding
+//const BASE_FEE = 191; // up to 193
+//const DUST = 2000;
+const DUST = 193;
 
 async function main() {
+  let wifsPath = process.argv[2];
+  let paymentAddr = process.argv[3];
+
+  if (!paymentAddr) {
+    console.error("Usage: examples/balance-transfer.js <wif-file> <pay-addr>");
+    console.error(
+      "Example: examples/balance-transfer.js ./wifs.txt XdMjvLrgMpoTjhPnQ2YfWzLXxWLATofqLX",
+    );
+    process.exit(1);
+  }
+
+  let wifsText = await Fs.readFile(wifsPath, "ascii");
+  let wifLines = wifsText.split(/[\r\n]+/);
+
+  // Note: each UTXO to be spent must be signed by its corresponds key
+  let wifs = [];
+  let keys = [];
+  let addrs = [];
+  let utxos = [];
+  for (let line of wifLines) {
+    let wif = line.trim();
+    if (!wif) {
+      return;
+    }
+    let privateKey = await wifToPrivateKey(wif);
+    let addr = await wifToAddr(wif);
+    let insightUtxo = await dashsight.getUtxos(addr);
+    let coreUtxos = dashsight.toCoreUtxos(insightUtxo);
+    for (let coreUtxo of coreUtxos) {
+      wifs.push(wif);
+      keys.push(privateKey);
+      addrs.push(addr);
+      utxos.push(coreUtxo);
+    }
+  }
+
+  /* EXAMPLE
   // Spendable UTXOs from two private keys
-  let coreUtxos = [
+  let utxos = [
     {
       address: "Xf7vuu6R1ir7kk8hShnXdpir3MKJ5bWpFs",
       outputIndex: 0,
@@ -36,33 +148,55 @@ async function main() {
       script: "76a914309f24907c81d7e56169b1ab5f86e89aba0f808488ac",
       txId: "966343979b762c30431b38654b70e8a5a43c394a9c67f80862cfb992f8955d16",
     },
-    {
-      address: "XmKzeKbSKtP6Ld3XpWf1S7a6hxRFmXvtqu",
-      outputIndex: 0,
-      satoshis: 99809,
-      script: "76a91474b8010010c29e778dae98f48a155a379554190088ac",
-      txId: "57d573d612b826c8d5729406aba4b18cc153bb0264e4211b4f7543eb55b28949",
-    },
   ];
-
-  // The destination address
-  let paymentAddr = "XdMjvLrgMpoTjhPnQ2YfWzLXxWLATofqLX";
-
-  // The change address
-  // (required as a safeguard, but we won't generate change here)
-  let changeAddr = paymentAddr;
+  */
 
   // The full transferable balance
-  let availableDuffs = coreUtxos.reduce(function (total, utxo) {
+  let availableDuffs = utxos.reduce(function (total, utxo) {
     return total + utxo.satoshis;
   }, 0);
 
-  // Each utxo to be spent must be signed by its corresponds key
-  let keys = [
-    "<private-key-wif-for-addr-1-goes-here>",
-    "<private-key-wif-for-addr-2-goes-here>",
-  ];
-  throw new Error("change the example to use your keys (and remove the error)");
+  let inputs = [];
+  for (let i in utxos) {
+    let utxo = utxos[i];
+    inputs.push({
+      txId: utxo.txId,
+      prevIndex: utxo.outputIndex,
+      // publicKey: , // optional
+      sigHashType: 0x01, // optional
+      subscript: utxo.script,
+      // TODO getPrivateKey moves elsewhere
+      getPrivateKey: function () {
+        return keys[i];
+      },
+    });
+  }
+
+  let txInfoEstimate = {
+    inputs: inputs,
+    outputs: [
+      {
+        pubKeyHash: addrToPubKeyHash(paymentAddr),
+        units: 0,
+      },
+    ],
+  };
+  let [minFee, maxFee] = BlockTx.estimate(txInfoEstimate);
+  if (!minFee) {
+    throw new Error("minFee is NaN");
+  }
+  if (!maxFee) {
+    throw new Error("maxFee is NaN");
+  }
+  let feeSpread = maxFee - minFee;
+
+  // TODO to what length do we take the diminishing returns?
+  let lowFeeExtra = Math.floor(feeSpread / 16);
+  let fee = minFee + lowFeeExtra;
+
+  let txInfo;
+  let txInfoSigned;
+  let txHex;
 
   // Note: Cyclic Fee Estimation
   //
@@ -71,9 +205,21 @@ async function main() {
   //
   // It is possible to calculate the full fee ahead of time, however, it's more
   // complexity than this example deserves.
-  let fee = BASE_FEE;
-  let tx;
-  for (;;) {
+  //
+  // In the best case scenario:
+  //     191 => 191 (no bigint pad, stable, exits)
+  // In the worst case scenario:
+  //     191 => 2000 (no bigint pad, just more items)
+  //     2000 => 2001 (input 1: 1st bigint pad)
+  //     2001 => 2002 (input 1: 1st & 2nd bigint pad)
+  //     2002 => 2002 (stable, exits)
+  let ITER_ERROR = feeSpread + 1;
+  for (let i = 0; ; i += 1) {
+    console.log("DEBUG iter, fee", i, fee);
+    if (i >= ITER_ERROR) {
+      throw new Error("SANITY FAIL: more loops than possible fee combos");
+    }
+
     let spendableDuffs = availableDuffs - fee;
     if (spendableDuffs < DUST) {
       throw new Error(
@@ -81,44 +227,67 @@ async function main() {
       );
     }
 
-    let payments = [
-      {
-        address: paymentAddr,
-        satoshis: spendableDuffs,
-      },
-    ];
+    console.log("DEBUG", inputs);
+    txInfo = {
+      version: 3, // (will be) optional
+      inputs: inputs,
+      outputs: [
+        {
+          pubKeyHash: await addrToPubKeyHash(paymentAddr),
+          units: spendableDuffs,
+        },
+      ],
+      // TODO any sort of minimum fee guessing?
+      locktime: 0, // optional
+    };
+    txInfoSigned = await dashtx.hashAndSignAll(txInfo);
+    console.log("DEBUG tx", txInfoSigned.transaction);
+    txHex = txInfoSigned.transaction.toString();
 
-    //@ts-ignore - the constructor can, in fact, take 0 arguments
-    tx = new Transaction();
-    tx.from(coreUtxos);
-    tx.to(payments);
-    tx.change(changeAddr);
-    tx.fee(fee);
-    tx.sign(keys);
-
-    let hex = tx.toString();
-    let newFee = hex.length / 2;
-    if (newFee <= fee) {
+    let newFee = Math.max(fee, txHex.length / 2);
+    if (newFee === fee) {
       break;
     }
 
     fee = newFee;
   }
 
-  let txHex = tx.serialize();
   console.info();
   console.info(
     "Transaction Hex: (inspect at https://live.blockcypher.com/dash/decodetx/)",
   );
   console.info(txHex);
   console.info();
+  process.exit(0);
 
+  return;
   let result = await dashsight.instantSend(txHex);
 
   console.info("Transaction ID:");
   console.info(result.body.txid);
   console.info();
 }
+
+/**
+ * @param {TxInfo} txInfo
+ * @returns {[Number, Number]}
+ */
+BlockTx.estimate = function (txInfo) {
+  let size = BlockTx._HEADER_ONLY_SIZE;
+
+  size += BlockTx.utils.toVarIntSize(txInfo.inputs.length);
+  size += BlockTx.MIN_INPUT_SIZE * txInfo.inputs.length;
+
+  size += BlockTx.utils.toVarIntSize(txInfo.outputs.length);
+  size += BlockTx.OUTPUT_SIZE * txInfo.outputs.length;
+
+  let maxPadding = BlockTx.MAX_INPUT_PAD * txInfo.inputs.length;
+  let maxSize = size + maxPadding;
+
+  return [size, maxSize];
+};
+BlockTx._HEADER_ONLY_SIZE = 8;
+BlockTx.MAX_INPUT_PAD = 2;
 
 main()
   .then(function () {
