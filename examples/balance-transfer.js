@@ -32,11 +32,6 @@ let b58c = Base58Check.create({
   privateKeyVersion: "cc",
 });
 let BlockTx = require("@dashincubator/blocktx");
-let dashtx = BlockTx.create({
-  version: 3,
-  sign: signTx,
-  toPublicKey: privateKeyToPublicKey,
-});
 let RIPEMD160 = require("@dashincubator/ripemd160");
 let Secp256k1 = require("@dashincubator/secp256k1");
 let Crypto = exports.crypto || require("../shims/crypto-node.js");
@@ -47,11 +42,10 @@ async function signTx({ privateKey, hash }) {
   return BlockTx.utils.u8ToHex(sigBuf);
 }
 
-function privateKeyToPublicKey(privBuf) {
+function toPublicKey(privBuf) {
   let isCompressed = true;
-  let pubBuf = Secp256k1.getPublicKey(privBuf, isCompressed);
-  let pubHex = BlockTx.utils.u8ToHex(pubBuf);
-  return pubHex;
+  let pubKey = Secp256k1.getPublicKey(privBuf, isCompressed);
+  return pubKey;
 }
 
 async function hashPublicKey(pubBuf) {
@@ -138,6 +132,20 @@ async function main() {
     }
   }
 
+  let dashtx = BlockTx.create({
+    version: 3,
+    sign: signTx,
+    getPrivateKey: async function (txInput, i) {
+      let privKey = keys[i];
+      return privKey;
+    },
+    getPublicKey: async function (txInput, i) {
+      let privKey = keys[i];
+      let pubKey = toPublicKey(privKey);
+      return pubKey;
+    },
+  });
+
   /* EXAMPLE
   // Spendable UTXOs from two private keys
   let utxos = [
@@ -165,10 +173,6 @@ async function main() {
       // publicKey: , // optional
       sigHashType: 0x01, // optional
       subscript: utxo.script,
-      // TODO getPrivateKey moves elsewhere
-      getPrivateKey: function () {
-        return keys[i];
-      },
     });
   }
 
