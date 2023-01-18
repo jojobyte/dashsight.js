@@ -150,10 +150,12 @@ async function main() {
   // Spendable UTXOs from two private keys
   let utxos = [
     {
+      // convenience for getPrivateKey/getPublicKey
       address: "Xf7vuu6R1ir7kk8hShnXdpir3MKJ5bWpFs",
       outputIndex: 0,
       satoshis: 99809,
       script: "76a914309f24907c81d7e56169b1ab5f86e89aba0f808488ac",
+      sigHashType: 0x01, // implicit, optional
       txId: "966343979b762c30431b38654b70e8a5a43c394a9c67f80862cfb992f8955d16",
     },
   ];
@@ -164,17 +166,7 @@ async function main() {
     return total + utxo.satoshis;
   }, 0);
 
-  let inputs = [];
-  for (let i in utxos) {
-    let utxo = utxos[i];
-    inputs.push({
-      txId: utxo.txId,
-      prevIndex: utxo.outputIndex,
-      // publicKey: , // optional
-      sigHashType: 0x01, // optional
-      subscript: utxo.script,
-    });
-  }
+  let inputs = utxos.slice(0);
 
   let txInfoEstimate = {
     inputs: inputs,
