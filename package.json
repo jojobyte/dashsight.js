@@ -18,7 +18,7 @@
     "lint": "npx jshint@2 -c .jshintrc ./lib ./bin ./*.js; npx -p typescript@4 tsc",
     "fmt": "npx prettier@2 --write '**/*.{md,js}'",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "version": "npm version -m \"chore(release): bump to v%s\""
+    "bump": "npm version -m \"chore(release): bump to v%s\""
   },
   "files": [
     "bin",
