@@ -36,59 +36,6 @@ let RIPEMD160 = require("@dashincubator/ripemd160");
 let Secp256k1 = require("@dashincubator/secp256k1");
 let Crypto = exports.crypto || require("../shims/crypto-node.js");
 
-async function signTx({ privateKey, hash }) {
-  let sigOpts = { canonical: true };
-  let sigBuf = await Secp256k1.sign(hash, privateKey, sigOpts);
-  return BlockTx.utils.u8ToHex(sigBuf);
-}
-
-function toPublicKey(privBuf) {
-  let isCompressed = true;
-  let pubKey = Secp256k1.getPublicKey(privBuf, isCompressed);
-  return pubKey;
-}
-
-async function hashPublicKey(pubBuf) {
-  //console.log("DEBUG pubBuf", pubBuf);
-  let sha = await Crypto.subtle.digest("SHA-256", pubBuf);
-  let shaU8 = new Uint8Array(sha);
-  //console.log("DEBUG shaU8", shaU8);
-  let ripemd = RIPEMD160.create();
-  let hash = ripemd.update(shaU8);
-  //console.log("DEBUG hash", hash);
-  let pkh = hash.digest("hex");
-  //console.log("DEBUG pkh", pkh);
-  return pkh;
-}
-
-async function wifToPrivateKey(wif) {
-  let parts = await b58c.verify(wif);
-  let privBuf = Buffer.from(parts.privateKey, "hex");
-  return privBuf;
-}
-
-/**
- * @param {String} wif
- * @returns {Promise<String>}
- */
-async function wifToAddr(wif) {
-  let parts = await b58c.verify(wif);
-  let privBuf = Buffer.from(parts.privateKey, "hex");
-  let isCompressed = true;
-  let pubBuf = Secp256k1.getPublicKey(privBuf, isCompressed);
-  let pubKeyHash = await hashPublicKey(pubBuf);
-  let addr = await b58c.encode({
-    version: "4c",
-    pubKeyHash: pubKeyHash,
-  });
-  return addr;
-}
-
-async function addrToPubKeyHash(addr) {
-  let parts = await b58c.verify(addr);
-  return parts.pubKeyHash;
-}
-
 // the cost of a typical, single input, single output tx is 191-193,
 // depending on signature padding
 //const BASE_FEE = 191; // up to 193
@@ -114,7 +61,19 @@ async function main() {
   let wifs = [];
   let keys = [];
   let addrs = [];
-  let utxos = [];
+  let utxos = [
+    /* Example
+    {
+      // convenience for getPrivateKey/getPublicKey
+      address: "Xf7vuu6R1ir7kk8hShnXdpir3MKJ5bWpFs",
+      outputIndex: 0,
+      satoshis: 99809,
+      script: "76a914309f24907c81d7e56169b1ab5f86e89aba0f808488ac",
+      sigHashType: 0x01, // implicit, optional
+      txId: "966343979b762c30431b38654b70e8a5a43c394a9c67f80862cfb992f8955d16",
+    }
+    */
+  ];
   for (let line of wifLines) {
     let wif = line.trim();
     if (!wif) {
@@ -146,21 +105,6 @@ async function main() {
     },
   });
 
-  /* EXAMPLE
-  // Spendable UTXOs from two private keys
-  let utxos = [
-    {
-      // convenience for getPrivateKey/getPublicKey
-      address: "Xf7vuu6R1ir7kk8hShnXdpir3MKJ5bWpFs",
-      outputIndex: 0,
-      satoshis: 99809,
-      script: "76a914309f24907c81d7e56169b1ab5f86e89aba0f808488ac",
-      sigHashType: 0x01, // implicit, optional
-      txId: "966343979b762c30431b38654b70e8a5a43c394a9c67f80862cfb992f8955d16",
-    },
-  ];
-  */
-
   // The full transferable balance
   let availableDuffs = utxos.reduce(function (total, utxo) {
     return total + utxo.satoshis;
@@ -172,12 +116,13 @@ async function main() {
     inputs: inputs,
     outputs: [
       {
+        address: paymentAddr,
         pubKeyHash: addrToPubKeyHash(paymentAddr),
-        units: 0,
+        satoshis: 0,
       },
     ],
   };
-  let [minFee, maxFee] = BlockTx.estimate(txInfoEstimate);
+  let [minFee, maxFee] = BlockTx.estimates(txInfoEstimate);
   if (!minFee) {
     throw new Error("minFee is NaN");
   }
@@ -227,8 +172,9 @@ async function main() {
       inputs: inputs,
       outputs: [
         {
+          address: paymentAddr,
           pubKeyHash: await addrToPubKeyHash(paymentAddr),
-          units: spendableDuffs,
+          satoshis: spendableDuffs,
         },
       ],
       // TODO any sort of minimum fee guessing?
@@ -267,26 +213,54 @@ async function main() {
   */
 }
 
+async function signTx({ privateKey, hash }) {
+  let sigOpts = { canonical: true };
+  let sigBuf = await Secp256k1.sign(hash, privateKey, sigOpts);
+  return sigBuf;
+}
+
+function toPublicKey(privBuf) {
+  let isCompressed = true;
+  let pubBuf = Secp256k1.getPublicKey(privBuf, isCompressed);
+  return pubBuf;
+}
+
+async function wifToPrivateKey(wif) {
+  let parts = await b58c.verify(wif);
+  let privBuf = Buffer.from(parts.privateKey, "hex");
+  return privBuf;
+}
+
+async function hashPublicKey(pubBuf) {
+  let sha = await Crypto.subtle.digest("SHA-256", pubBuf);
+  let shaU8 = new Uint8Array(sha);
+  let ripemd = RIPEMD160.create();
+  let hash = ripemd.update(shaU8);
+  let pkh = hash.digest("hex");
+  return pkh;
+}
+
 /**
- * @param {TxInfo} txInfo
- * @returns {[Number, Number]}
+ * @param {String} wif
+ * @returns {Promise<String>}
  */
-BlockTx.estimate = function (txInfo) {
-  let size = BlockTx._HEADER_ONLY_SIZE;
+async function wifToAddr(wif) {
+  let parts = await b58c.verify(wif);
+  let privBuf = Buffer.from(parts.privateKey, "hex");
+  let isCompressed = true;
+  let pubBuf = Secp256k1.getPublicKey(privBuf, isCompressed);
+  let pubKeyHash = await hashPublicKey(pubBuf);
+  let addr = await b58c.encode({
+    version: "4c",
+    pubKeyHash: pubKeyHash,
+  });
+  return addr;
+}
 
-  size += BlockTx.utils.toVarIntSize(txInfo.inputs.length);
-  size += BlockTx.MIN_INPUT_SIZE * txInfo.inputs.length;
-
-  size += BlockTx.utils.toVarIntSize(txInfo.outputs.length);
-  size += BlockTx.OUTPUT_SIZE * txInfo.outputs.length;
-
-  let maxPadding = BlockTx.MAX_INPUT_PAD * txInfo.inputs.length;
-  let maxSize = size + maxPadding;
-
-  return [size, maxSize];
-};
-BlockTx._HEADER_ONLY_SIZE = 8;
-BlockTx.MAX_INPUT_PAD = 2;
+async function addrToPubKeyHash(addr) {
+  let parts = await b58c.verify(addr);
+  return parts.pubKeyHash;
+}
 
 main()
   .then(function () {

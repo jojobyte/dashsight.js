@@ -35,7 +35,7 @@ let Crypto = exports.crypto || require("../shims/crypto-node.js");
 async function signTx({ privateKey, hash }) {
   let sigOpts = { canonical: true };
   let sigBuf = await Secp256k1.sign(hash, privateKey, sigOpts);
-  return BlockTx.utils.u8ToHex(sigBuf);
+  return sigBuf;
 }
 
 /**
@@ -43,23 +43,19 @@ async function signTx({ privateKey, hash }) {
  */
 function toPublicKey(privBuf) {
   let isCompressed = true;
-  let pubKey = Secp256k1.getPublicKey(privBuf, isCompressed);
-  return pubKey;
+  let pubBuf = Secp256k1.getPublicKey(privBuf, isCompressed);
+  return pubBuf;
 }
 
 /**
  * @param {import('@dashincubator/blocktx').TxPublicKey} pubBuf
  */
 async function hashPublicKey(pubBuf) {
-  //console.log("DEBUG pubBuf", pubBuf);
   let sha = await Crypto.subtle.digest("SHA-256", pubBuf);
   let shaU8 = new Uint8Array(sha);
-  //console.log("DEBUG shaU8", shaU8);
   let ripemd = RIPEMD160.create();
   let hash = ripemd.update(shaU8);
-  //console.log("DEBUG hash", hash);
   let pkh = hash.digest("hex");
-  //console.log("DEBUG pkh", pkh);
   return pkh;
 }
 
