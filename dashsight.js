@@ -146,10 +146,18 @@
       let reqObj = {
         method: "POST",
         url: instUrl,
-        json: true,
-        form: {
-          rawtx: hexTx,
+        // This does not appear to work
+        // json: {
+        //   rawtx: hexTx,
+        // },
+        // Though inelegant, this does work
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
         },
+        body: JSON.stringify({
+          rawtx: hexTx,
+        }),
       };
       let txResp = await request(reqObj);
       if (!txResp.ok) {
