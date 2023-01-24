@@ -203,13 +203,14 @@
 
       let ws = await Eio3.connectWs(session.sid);
       wsc._ws = ws;
+      ws._pingTimeout = null;
 
       setPing();
       ws.addEventListener("message", _onMessage);
       ws.onclose = _onClose;
 
       function setPing() {
-        setTimeout(function () {
+        ws._pingTimeout = setTimeout(function () {
           //ws.ping(); // standard
           ws.send("2"); // socket.io
           if (debug) {
@@ -268,7 +269,8 @@
 
       function _onClose() {
         ws.onclose = null;
-        ws.removeEventListener(_onMessage);
+        ws.removeEventListener("message", _onMessage);
+        clearTimeout(ws._pingTimeout)
         if (debug) {
           console.debug("WebSocket Close");
         }
@@ -369,5 +371,83 @@
     //@ts-ignore
     ws.close();
     return result;
+  };
+
+  // TODO waitForVouts(baseUrl, [{ address, satoshis }])
+
+  /**
+   * @param {String} dashsocketBaseUrl
+   * @param {String} addr
+   * @param {Number} [amount]
+   * @param {Number} [maxTxLockWait]
+   * @param {WsOpts} [opts]
+   * @returns {Promise<SocketPayment>}
+   */
+  Ws.waitForVout = async function (
+    dashsocketBaseUrl,
+    addr,
+    amount = 0,
+    maxTxLockWait = 3000,
+    opts = {},
+  ) {
+    if ("https://insight.dash.org" === dashsocketBaseUrl) {
+      dashsocketBaseUrl = "https://insight.dash.org/socket.io";
+    }
+
+    // Listen for Response
+    /** @type SocketPayment */
+    let mempoolTx;
+    return await Ws.listen(dashsocketBaseUrl, findResponse, opts);
+
+    /**
+     * @param {String} evname
+     * @param {InsightSocketEventData} data
+     */
+    function findResponse(evname, data) {
+      if (!["tx", "txlock"].includes(evname)) {
+        return;
+      }
+
+      let now = Date.now();
+      if (mempoolTx?.timestamp) {
+        // don't wait longer than 3s for a txlock
+        if (now - mempoolTx.timestamp > maxTxLockWait) {
+          return mempoolTx;
+        }
+      }
+
+      let result;
+      // TODO should fetch tx and match hotwallet as vin
+      data.vout.some(function (vout) {
+        if (!(addr in vout)) {
+          return false;
+        }
+
+        let duffs = vout[addr];
+        if (amount && duffs !== amount) {
+          return false;
+        }
+
+        let newTx = {
+          address: addr,
+          timestamp: now,
+          txid: data.txid,
+          satoshis: duffs,
+          txlock: data.txlock,
+        };
+
+        if ("txlock" !== evname) {
+          if (!mempoolTx) {
+            mempoolTx = newTx;
+          }
+          return false;
+        }
+
+        result = newTx;
+        return true;
+      });
+
+      return result;
+    }
   };
 })(("undefined" !== typeof module && module.exports) || window);
