@@ -109,7 +109,7 @@ module.exports = require("./dashsight.js");
  */
 
 /**
- * @typedef InsightBalance
+ * @typedef {Object | null} InsightBalance
  * @property {String} addrStr
  * @property {Number} balance
  * @property {Number} balanceSat

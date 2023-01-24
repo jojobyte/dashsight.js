@@ -5,9 +5,6 @@
   //@ts-ignore
   exports.DashSight = Dashsight;
 
-  //@ts-ignore
-  let request = exports.__dashsight_request || require("./lib/request.js");
-
   const DUFFS = 100000000;
 
   /** @typedef {import('./').CoreUtxo} CoreUtxo */
@@ -27,6 +24,31 @@
   /** @typedef {import('./').GetUtxos} GetUtxos */
   /** @typedef {import('./').ToCoreUtxo} ToCoreUtxo */
   /** @typedef {import('./').ToCoreUtxos} ToCoreUtxos */
+
+  /**
+   * @typedef {RequestInit & { headers: Object, body?: String }} DashHeaders
+   */
+  /**
+   * @param {Object} [body]
+   * @returns {DashHeaders}
+   */
+  function jsonRequestBody(body) {
+    /**
+     * @type {DashHeaders} headers
+     */
+    let headers = {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+    }
+
+    if (body) {
+      headers.body = JSON.stringify(body)
+    }
+
+    return headers
+  }
 
   /**
    * @param {Object} opts
@@ -73,7 +95,7 @@
       console.warn(`warn: getBalance(pubkey) doesn't account for instantSend,`);
       console.warn(`      consider (await getUtxos()).reduce(countSatoshis)`);
       let txUrl = `${insightBaseUrl}/addr/${address}/?noTxList=1`;
-      let txResp = await request({ url: txUrl, json: true });
+      let txResp = await fetch(txUrl, { ...jsonRequestBody() });
 
       /** @type {InsightBalance} */
       let data = txResp.body;
@@ -83,7 +105,7 @@
     /** @type {GetInstantBalance} */
     insight.getInstantBalance = async function (address) {
       let utxos = await insight.getUtxos(address);
-      let balanceDuffs = utxos.reduce(function (total, utxo) {
+      let balanceDuffs = utxos?.reduce(function (total, utxo) {
         return total + utxo.satoshis;
       }, 0);
       // because 0.1 + 0.2 = 0.30000000000000004,
@@ -104,10 +126,10 @@
     /** @type {GetUtxos} */
     insight.getUtxos = async function (address) {
       let utxoUrl = `${insightBaseUrl}/addr/${address}/utxo`;
-      let utxoResp = await request({ url: utxoUrl, json: true });
+      let utxoResp = await fetch(utxoUrl, { ...jsonRequestBody() });
 
       /** @type Array<InsightUtxo> */
-      let utxos = utxoResp.body;
+      let utxos = await utxoResp.json();
       return utxos;
     };
 
@@ -126,20 +148,20 @@
     /** @type {GetTx} */
     insight.getTx = async function (txid) {
       let txUrl = `${insightBaseUrl}/tx/${txid}`;
-      let txResp = await request({ url: txUrl, json: true });
+      let txResp = await fetch(txUrl, { ...jsonRequestBody() });
 
       /** @type InsightTx */
-      let data = txResp.body;
+      let data = await txResp.json();
       return data;
     };
 
     /** @type {GetTxs} */
     insight.getTxs = async function (addr, maxPages) {
       let txUrl = `${insightBaseUrl}/txs?address=${addr}&pageNum=0`;
-      let txResp = await request({ url: txUrl, json: true });
+      let txResp = await fetch(txUrl, { ...jsonRequestBody() });
 
       /** @type {InsightTxResponse} */
-      let body = txResp.body;
+      let body = await txResp.json();
 
       let data = await getAllPages(body, addr, maxPages);
       return data;
@@ -153,13 +175,15 @@
     async function getAllPages(body, addr, maxPages) {
       let pagesTotal = Math.min(body.pagesTotal, maxPages);
       for (let cursor = 1; cursor < pagesTotal; cursor += 1) {
-        let nextResp = await request({
-          url: `${insightBaseUrl}/txs?address=${addr}&pageNum=${cursor}`,
-          json: true,
-        });
+        let nextResp = await fetch(
+          `${insightBaseUrl}/txs?address=${addr}&pageNum=${cursor}`,
+          { ...jsonRequestBody() }
+        );
+        nextResp = await nextResp.json();
         // Note: this could still be wrong, but I don't think we have
         // a better way to page so... whatever
-        body.txs = body.txs.concat(nextResp.body.txs);
+        // @ts-ignore
+        body.txs = body.txs.concat(nextResp?.txs);
       }
       return body;
     }
@@ -172,18 +196,16 @@
       let instUrl = `${dashsightBaseUrl}/tx/sendix`;
       let reqObj = {
         method: "POST",
-        url: instUrl,
-        json: true,
-        form: {
+        ...jsonRequestBody({
           rawtx: hexTx,
-        },
+        }),
       };
-      let txResp = await request(reqObj);
+      let txResp = await fetch(instUrl, reqObj);
       if (!txResp.ok) {
         // TODO better error check
         throw new Error(JSON.stringify(txResp.body, null, 2));
       }
-      return txResp.toJSON();
+      return txResp.json();
     };
 
     /** @type {ToCoreUtxo} */
